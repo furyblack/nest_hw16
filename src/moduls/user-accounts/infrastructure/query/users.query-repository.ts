@@ -19,6 +19,7 @@ export class UsersQueryRepository {
       _id: id,
       deletionStatus: DeletionStatus.NotDeleted,
     });
+
     if (!user) {
       throw new NotFoundException('user not found');
     }

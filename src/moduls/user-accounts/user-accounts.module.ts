@@ -18,14 +18,19 @@ import { RegisterUserUseCase } from './use-cases/register-user-use-case';
 import { DeleteUserUseCase } from './use-cases/delete-user-use-case';
 import { SecurityDevicesController } from './api/security-devices.controller';
 import { SecurityDevicesQueryRepository } from './infrastructure/query/security-devices.query-repository';
+import { Session, SessionSchema } from './domain/session.entity';
+import { SessionService } from './application/session.service';
 
 @Module({
   imports: [
     JwtModule.register({
-      secret: 'access-token-secret', //TODO: move to env. will be in the following lessons
-      signOptions: { expiresIn: '60m' }, // Время жизни токена
+      secret: process.env.JWT_SECRET || 'secret-key',
+      signOptions: { expiresIn: '20s' }, // Базовые настройки
     }),
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    MongooseModule.forFeature([
+      { name: User.name, schema: UserSchema },
+      { name: Session.name, schema: SessionSchema },
+    ]),
     NotificationsModule,
   ],
   controllers: [UsersController, AuthController, SecurityDevicesController],
@@ -42,12 +47,14 @@ import { SecurityDevicesQueryRepository } from './infrastructure/query/security-
     CreateUserUseCase,
     RegisterUserUseCase,
     DeleteUserUseCase,
+    SessionService,
   ],
 
   exports: [
     UsersRepository,
     MongooseModule,
     JwtStrategy,
+    JwtModule,
     /* MongooseModule реэкспорт делаем, если хотим чтобы зарегистрированные здесь модельки могли
     инджектиться в сервисы других модулей, которые импортнут этот модуль */
   ],

@@ -1,21 +1,100 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { UsersRepository } from '../infrastructure/users.repository';
+import { JwtService, TokenExpiredError } from '@nestjs/jwt';
 import { CryptoService } from './crypto.service';
-import { UserContextDto } from '../guards/dto/user.context.dto';
-import { JwtService } from '@nestjs/jwt';
 import { UsersService } from './users.service';
 import { EmailService } from '../../notifications/email.service';
 import { BadRequestDomainException } from '../../../core/exceptions/domain-exceptions';
+import { SessionService } from './session.service';
+import { randomUUID } from 'crypto';
+import { UserContextDto } from '../guards/dto/user.context.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private usersRepository: UsersRepository,
-    private cryptoService: CryptoService,
     private jwtService: JwtService,
+    private cryptoService: CryptoService,
     readonly usersService: UsersService,
     private emailService: EmailService,
+    private sessionService: SessionService,
   ) {}
+
+  private generateAccessToken(userId: string, login: string): string {
+    return this.jwtService.sign({ userId, login }, { expiresIn: '10s' });
+  }
+
+  private generateRefreshToken(userId: string, deviceId: string): string {
+    return this.jwtService.sign({ userId, deviceId }, { expiresIn: '20s' });
+  }
+
+  async login(userId: string, ip: string, userAgent: string) {
+    const user = await this.usersRepository.findById(userId);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    const deviceId = randomUUID();
+    const accessToken = this.generateAccessToken(user.id, user.login);
+    const refreshToken = this.generateRefreshToken(user.id, deviceId);
+    const refreshDecode = this.jwtService.decode(refreshToken);
+
+    await this.sessionService.createSession({
+      ip,
+      title: userAgent,
+      deviceId,
+      userId: user.id,
+      lastActiveDate: refreshDecode.iat,
+    });
+
+    return { accessToken, refreshToken };
+  }
+
+  async logout(deviceId: string): Promise<void> {
+    await this.sessionService.deleteSessionByDeviceId(deviceId);
+  }
+
+  async refreshToken(oldRefreshToken: string) {
+    let payload;
+    try {
+      payload = this.jwtService.verify(oldRefreshToken);
+    } catch (e) {
+      if (e instanceof TokenExpiredError) {
+        throw new UnauthorizedException('Refresh token expired');
+      }
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    const session = await this.sessionService.findSessionByDeviceId(
+      payload.deviceId,
+    );
+    if (!session) {
+      throw new UnauthorizedException('Session not found');
+    }
+    console.log(session);
+    if (payload.iat != session.lastActiveDate) {
+      throw new UnauthorizedException('session not found1111');
+    }
+
+    const user = await this.usersRepository.findById(payload.userId);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const newAccessToken = this.generateAccessToken(user.id, user.login);
+    const newRefreshToken = this.generateRefreshToken(
+      user.id,
+      payload.deviceId,
+    );
+
+    await this.sessionService.updateSessionLastActiveDate(payload.deviceId);
+
+    return { newAccessToken, newRefreshToken };
+  }
   async validateUser(
     login: string,
     password: string,
@@ -24,7 +103,6 @@ export class AuthService {
     if (!user) {
       return null;
     }
-
     const isPasswordValid = await this.cryptoService.comparePasswords({
       password,
       hash: user.passwordHash,
@@ -37,49 +115,18 @@ export class AuthService {
     return { id: user.id.toString() };
   }
 
-  // Генерация accessToken
-  private generateAccessToken(userId: string, login: string): string {
-    return this.jwtService.sign(
-      { id: userId, login },
-      { expiresIn: '15m' }, // accessToken действует 15 минут
-    );
-  }
-
-  // Генерация refreshToken
-  private generateRefreshToken(userId: string, login: string): string {
-    return this.jwtService.sign(
-      { id: userId, login },
-      { expiresIn: '7d' }, // refreshToken действует 7 дней
-    );
-  }
-
-  async login(
-    userId: string,
-  ): Promise<{ accessToken: string; refreshToken: string }> {
-    const user = await this.usersRepository.findById(userId);
-    if (!user) {
-      throw new BadRequestException('User not found');
-    }
-    const accessToken = this.generateAccessToken(userId, user.login);
-    const refreshToken = this.generateRefreshToken(userId, user.login);
-    return {
-      accessToken,
-      refreshToken,
-    };
-  }
   async confirmRegistration(code: string): Promise<void> {
     const user = await this.usersRepository.findByConfirmationCode(code);
+
     if (!user) {
       throw new BadRequestDomainException([
-        {
-          message: 'invalid confirmation code',
-          key: 'code',
-        },
+        { message: 'Invalid confirmation code', key: 'code' },
       ]);
     }
+
     if (user.isEmailConfirmed) {
       throw new BadRequestDomainException([
-        { message: 'user already confirmed', key: 'code' },
+        { message: 'User already confirmed', key: 'code' },
       ]);
     }
 
@@ -98,33 +145,41 @@ export class AuthService {
 
     await user.save();
   }
+
   async passwordRecovery(email: string): Promise<void> {
     const user = await this.usersRepository.findByEmail(email);
+
     if (!user) {
       throw new BadRequestDomainException([
-        { message: 'such user not found', key: 'email' },
+        { message: 'Such user not found', key: 'email' },
       ]);
     }
   }
+
   async emailResending(email: string): Promise<void> {
     const user = await this.usersRepository.findByEmail(email);
     if (!user) {
       throw new BadRequestDomainException([
-        { message: 'such user not found', key: 'email' },
+        { message: 'Such user not found', key: 'email' },
       ]);
     }
     if (user.isEmailConfirmed) {
       throw new BadRequestDomainException([
-        { message: 'user already confirmed', key: 'email' },
+        { message: 'User already confirmed', key: 'email' },
       ]);
     }
-
-    const newconfirmationCode = 'newuuid';
-
-    user.setConfirmationCode(newconfirmationCode);
+    const newconfirmCode = 'newuuid';
+    user.setConfirmationCode(newconfirmCode);
     await this.usersRepository.save(user);
     await this.emailService
-      .sendConfirmationEmail(user.email, newconfirmationCode)
+      .sendConfirmationEmail(user.email, newconfirmCode)
       .catch(console.error);
+  }
+
+  async refreshTokens(userId: string, deviceId: string) {
+    // Обновляем токены, но deviceId должен оставаться прежним ага
+    const tokens = await this.generateRefreshToken(userId, deviceId);
+    await this.sessionService.updateSessionLastActiveDate(deviceId);
+    return tokens;
   }
 }
