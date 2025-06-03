@@ -25,7 +25,7 @@ import { JwtRefreshStrategy } from './guards/jwtRefreshStrategy';
 @Module({
   imports: [
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'secret-key',
+      secret: 'secret-key', // TODO return process.env.JWT_SECRET ||
       signOptions: { expiresIn: '20s' }, // Базовые настройки
     }),
     MongooseModule.forFeature([

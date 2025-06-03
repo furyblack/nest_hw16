@@ -59,7 +59,7 @@ export class AuthController {
     const ip = request.ip ?? 'unknown'; // На всякий случай обрабатываем и ip
 
     const { accessToken, refreshToken } = await this.authService.login(
-      user.id,
+      user.userId,
       ip,
       userAgent,
     );
@@ -119,7 +119,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async me(@ExtractUserFromRequest() user: UserContextDto): Promise<MeViewDto> {
     console.log(`user`, user);
-    const x = await this.authQueryRepository.me(user.id);
+    const x = await this.authQueryRepository.me(user.userId);
     console.log(x);
     return x;
   }

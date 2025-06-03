@@ -16,7 +16,9 @@ export class SecurityDevicesController {
   @Get('devices')
   @UseGuards(RefreshTokenGuardPower)
   async getDevices(@ExtractUserFromRequest() user: UserContextDto) {
-    const sessions = await this.sessionService.findAllSessionsForUser(user.id);
+    const sessions = await this.sessionService.findAllSessionsForUser(
+      user.userId,
+    );
     return sessions.map((session) => ({
       ip: session.ip,
       title: session.title,
@@ -32,7 +34,10 @@ export class SecurityDevicesController {
     @Cookies('refreshToken') refreshToken: string,
   ) {
     const payload = this.jwtService.verify(refreshToken);
-    await this.sessionService.deleteAllOtherSessions(user.id, payload.deviceId);
+    await this.sessionService.deleteAllOtherSessions(
+      user.userId,
+      payload.deviceId,
+    );
     // Возвращаем 204 без тела
   }
 
@@ -42,7 +47,7 @@ export class SecurityDevicesController {
     @ExtractUserFromRequest() user: UserContextDto,
     @Param('deviceId') deviceId: string,
   ) {
-    await this.sessionService.terminateSpecificSession(user.id, deviceId);
+    await this.sessionService.terminateSpecificSession(user.userId, deviceId);
     // Возвращаем 204 без тела
   }
 }
