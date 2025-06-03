@@ -40,16 +40,16 @@ export class AuthController {
   ) {}
 
   @Post('registration')
-  @UseGuards(ThrottlerGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(ThrottlerGuard)
   registration(@Body() body: CreateUserInputDto): Promise<void> {
     return this.usersService.registerUser(body);
   }
 
   @Post('login')
+  @HttpCode(HttpStatus.OK)
   @UseGuards(LocalAuthGuard)
   @UseGuards(ThrottlerGuard)
-  @HttpCode(HttpStatus.OK)
   async login(
     @ExtractUserFromRequest() user: UserContextDto,
     @Req() request: Request,
@@ -106,8 +106,8 @@ export class AuthController {
   }
 
   @Post('logout')
-  @UseGuards(RefreshTokenGuardR)
   @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(RefreshTokenGuardR)
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const user = req.user as { deviceId: string };
 
@@ -125,8 +125,8 @@ export class AuthController {
   }
 
   @Post('registration-confirmation')
-  @UseGuards(ThrottlerGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(ThrottlerGuard)
   async confirmRegistration(
     @Body() dto: ConfirmRegistrationDto,
   ): Promise<void> {
@@ -134,15 +134,15 @@ export class AuthController {
   }
 
   @Post('password-recovery')
-  @UseGuards(ThrottlerGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(ThrottlerGuard)
   async passwordRecovery(@Body() dto: PasswordRecoveryDto): Promise<void> {
     await this.authService.passwordRecovery(dto.email);
   }
 
   @Post('registration-email-resending')
-  @UseGuards(ThrottlerGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(ThrottlerGuard)
   async emailResending(@Body() dto: PasswordRecoveryDto): Promise<void> {
     await this.authService.emailResending(dto.email);
   }

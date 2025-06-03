@@ -20,6 +20,7 @@ import { SecurityDevicesController } from './api/security-devices.controller';
 import { SecurityDevicesQueryRepository } from './infrastructure/query/security-devices.query-repository';
 import { Session, SessionSchema } from './domain/session.entity';
 import { SessionService } from './application/session.service';
+import { JwtRefreshStrategy } from './guards/jwtRefreshStrategy';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { SessionService } from './application/session.service';
     RegisterUserUseCase,
     DeleteUserUseCase,
     SessionService,
+    JwtRefreshStrategy,
   ],
 
   exports: [
