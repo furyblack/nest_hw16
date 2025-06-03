@@ -46,8 +46,15 @@ export class SecurityDevicesController {
   async terminateDevice(
     @ExtractUserFromRequest() user: UserContextDto,
     @Param('deviceId') deviceId: string,
+    @Cookies('refreshToken') refreshToken: string,
   ) {
-    await this.sessionService.terminateSpecificSession(user.userId, deviceId);
+    const payload = this.jwtService.verify(refreshToken);
+
+    await this.sessionService.terminateSpecificSession(
+      user.userId,
+      deviceId,
+      payload.iat, // теперь передаём iat для проверки "своей" сессии
+    );
     // Возвращаем 204 без тела
   }
 }

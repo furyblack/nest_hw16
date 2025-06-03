@@ -27,8 +27,8 @@ import { Cookies } from '../decarators/cookies.decorator';
 import { Request } from 'express';
 import { JwtService } from '@nestjs/jwt';
 import { UserContextDto } from '../guards/dto/user.context.dto';
-import { RefreshTokenGuardR } from '../guards/refresh-token-guard v2';
 import { MeViewDto } from './view-dto/user.view-dto';
+import { RefreshTokenGuardPower } from '../guards/bearer/refresh-guard v2.0';
 
 @Controller('auth')
 export class AuthController {
@@ -107,7 +107,7 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UseGuards(RefreshTokenGuardR)
+  @UseGuards(RefreshTokenGuardPower)
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const user = req.user as { deviceId: string };
 

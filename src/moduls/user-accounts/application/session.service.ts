@@ -29,17 +29,42 @@ export class SessionService {
     return this.sessionModel.findOne({ deviceId }).exec();
   }
 
-  async deleteSessionByDeviceId(deviceId: string): Promise<void> {
-    const result = await this.sessionModel.deleteOne({ deviceId }).exec();
+  async findSessionByDeviceIdAndDate(deviceId: string, iat: number) {
+    return this.sessionModel
+      .findOne({
+        deviceId,
+        lastActiveDate: iat,
+      })
+      .exec();
+  }
+
+  async deleteSessionByDeviceIdAndDate(
+    deviceId: string,
+    iat: number,
+  ): Promise<void> {
+    const result = await this.sessionModel
+      .deleteOne({ deviceId, lastActiveDate: iat })
+      .exec();
     if (result.deletedCount === 0) {
       throw new NotFoundException('Session not found');
     }
   }
 
-  async updateSessionLastActiveDate(deviceId: string) {
-    await this.sessionModel
-      .updateOne({ deviceId }, { $set: { lastActiveDate: new Date() } })
+  async updateSessionLastActiveDate(
+    deviceId: string,
+    oldIat: number,
+    newIat: number,
+  ) {
+    const result = await this.sessionModel
+      .updateOne(
+        { deviceId, lastActiveDate: oldIat },
+        { $set: { lastActiveDate: newIat } },
+      )
       .exec();
+
+    if (result.matchedCount === 0) {
+      throw new NotFoundException('Session not found for update');
+    }
   }
 
   async findAllSessionsForUser(userId: string) {
@@ -58,8 +83,14 @@ export class SessionService {
   async terminateSpecificSession(
     userId: string,
     deviceId: string,
+    iat: number,
   ): Promise<void> {
-    const session = await this.sessionModel.findOne({ deviceId }).exec();
+    const session = await this.sessionModel
+      .findOne({
+        deviceId,
+        lastActiveDate: iat,
+      })
+      .exec();
 
     if (!session) {
       throw new NotFoundException('Session not found');
@@ -69,6 +100,11 @@ export class SessionService {
       throw new ForbiddenException('Session does not belong to user');
     }
 
-    await this.sessionModel.deleteOne({ deviceId }).exec();
+    await this.sessionModel
+      .deleteOne({
+        deviceId,
+        lastActiveDate: iat,
+      })
+      .exec();
   }
 }

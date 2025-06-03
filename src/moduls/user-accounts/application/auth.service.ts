@@ -54,12 +54,22 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  async logout(deviceId: string): Promise<void> {
-    await this.sessionService.deleteSessionByDeviceId(deviceId);
+  async logout(refreshToken: string): Promise<void> {
+    let payload: any;
+    try {
+      payload = this.jwtService.verify(refreshToken);
+    } catch {
+      throw new UnauthorizedException('Invalid token');
+    }
+
+    await this.sessionService.deleteSessionByDeviceIdAndDate(
+      payload.deviceId,
+      payload.iat,
+    );
   }
 
   async refreshToken(oldRefreshToken: string) {
-    let payload;
+    let payload: any;
     try {
       payload = this.jwtService.verify(oldRefreshToken);
     } catch (e) {
@@ -69,15 +79,13 @@ export class AuthService {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
-    const session = await this.sessionService.findSessionByDeviceId(
+    const session = await this.sessionService.findSessionByDeviceIdAndDate(
       payload.deviceId,
+      payload.iat,
     );
+
     if (!session) {
-      throw new UnauthorizedException('Session not found');
-    }
-    console.log(session);
-    if (payload.iat != session.lastActiveDate) {
-      throw new UnauthorizedException('session not found1111');
+      throw new UnauthorizedException('Session not found or already updated');
     }
 
     const user = await this.usersRepository.findById(payload.userId);
@@ -90,11 +98,30 @@ export class AuthService {
       user.id,
       payload.deviceId,
     );
+    const newPayload: any = this.jwtService.decode(newRefreshToken);
 
-    await this.sessionService.updateSessionLastActiveDate(payload.deviceId);
+    await this.sessionService.updateSessionLastActiveDate(
+      payload.deviceId,
+      payload.iat,
+      newPayload.iat,
+    );
 
     return { newAccessToken, newRefreshToken };
   }
+
+  async refreshTokens(userId: string, deviceId: string, oldIat: number) {
+    const newRefreshToken = this.generateRefreshToken(userId, deviceId);
+    const newPayload: any = this.jwtService.decode(newRefreshToken);
+
+    await this.sessionService.updateSessionLastActiveDate(
+      deviceId,
+      oldIat,
+      newPayload.iat,
+    );
+
+    return newRefreshToken;
+  }
+
   async validateUser(
     login: string,
     password: string,
@@ -174,12 +201,5 @@ export class AuthService {
     await this.emailService
       .sendConfirmationEmail(user.email, newconfirmCode)
       .catch(console.error);
-  }
-
-  async refreshTokens(userId: string, deviceId: string) {
-    // Обновляем токены, но deviceId должен оставаться прежним ага
-    const tokens = await this.generateRefreshToken(userId, deviceId);
-    await this.sessionService.updateSessionLastActiveDate(deviceId);
-    return tokens;
   }
 }

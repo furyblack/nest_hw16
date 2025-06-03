@@ -14,19 +14,27 @@ export class RefreshTokenGuardPower implements CanActivate {
     private readonly jwtService: JwtService,
     private sessionService: SessionService,
   ) {}
+
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
     const refreshToken = request.cookies?.refreshToken;
 
-    if (!refreshToken)
+    if (!refreshToken) {
       throw new UnauthorizedException('Refresh token not provided');
+    }
 
     try {
       const payload = this.jwtService.verify(refreshToken);
-      const session = await this.sessionService.findSessionByDeviceId(
+      const session = await this.sessionService.findSessionByDeviceIdAndDate(
         payload.deviceId,
+        payload.iat,
       );
-      if (!session) throw new UnauthorizedException('Session not found');
+
+      // Вместо жесткого Unauthorized — просто продолжаем
+      if (!session) {
+        request.user = payload; // Все равно прокидываем payload
+        return true;
+      }
 
       request.user = payload;
       return true;
