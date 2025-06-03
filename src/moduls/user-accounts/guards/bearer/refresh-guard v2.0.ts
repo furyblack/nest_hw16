@@ -30,10 +30,8 @@ export class RefreshTokenGuardPower implements CanActivate {
         payload.iat,
       );
 
-      // Вместо жесткого Unauthorized — просто продолжаем
       if (!session) {
-        request.user = payload; // Все равно прокидываем payload
-        return true;
+        throw new UnauthorizedException('Session not found or token reused');
       }
 
       request.user = payload;

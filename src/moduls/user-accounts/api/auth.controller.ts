@@ -109,9 +109,8 @@ export class AuthController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(RefreshTokenGuardPower)
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    const user = req.user as { deviceId: string };
-
-    await this.authService.logout(user.deviceId); // деактивировать сессию
+    const refreshToken = req.cookies.refreshToken;
+    await this.authService.logout(refreshToken);
     res.clearCookie('refreshToken');
   }
 
