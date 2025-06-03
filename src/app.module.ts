@@ -18,7 +18,7 @@ import { BloggersPlatformModule } from './moduls/bloggers-platform/bloggers-plat
       useFactory: async (configService: ConfigService) => ({
         uri: configService.get<string>(
           'MONGO_URI',
-          'mongodb://localhost:27017/test',
+          'mongodb://localhost:27017/nest',
         ),
       }),
       inject: [ConfigService],
