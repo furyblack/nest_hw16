@@ -90,7 +90,6 @@ export class SessionService {
   async terminateSpecificSession(
     userId: string,
     deviceId: string,
-    iat: number,
   ): Promise<void> {
     const session = await this.sessionModel
       .findOne({

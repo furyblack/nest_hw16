@@ -24,7 +24,6 @@ import {
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { Cookies } from '../decarators/cookies.decorator';
 import { Request } from 'express';
-import { JwtService } from '@nestjs/jwt';
 import { UserContextDto } from '../guards/dto/user.context.dto';
 import { MeViewDto } from './view-dto/user.view-dto';
 import { RefreshTokenGuardPower } from '../guards/bearer/refresh-guard v2.0';
@@ -34,11 +33,8 @@ export class AuthController {
   constructor(
     private usersService: UsersService,
     private authService: AuthService,
-    private jwtService: JwtService,
     private authQueryRepository: AuthQueryRepository,
-  ) {
-    console.log('AuthController initialized');
-  }
+  ) {}
 
   @Post('registration')
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -80,7 +76,6 @@ export class AuthController {
     @Cookies('refreshToken') refreshToken: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    console.log('refreshToken endpoint hit');
     const { newAccessToken, newRefreshToken } =
       await this.authService.refreshToken(refreshToken);
 

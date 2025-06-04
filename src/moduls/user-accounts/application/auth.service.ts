@@ -4,9 +4,8 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { UsersRepository } from '../infrastructure/users.repository';
-import { JwtService, TokenExpiredError } from '@nestjs/jwt';
+import { JwtService } from '@nestjs/jwt';
 import { CryptoService } from './crypto.service';
-import { UsersService } from './users.service';
 import { EmailService } from '../../notifications/email.service';
 import { BadRequestDomainException } from '../../../core/exceptions/domain-exceptions';
 import { SessionService } from './session.service';
@@ -19,7 +18,6 @@ export class AuthService {
     private usersRepository: UsersRepository,
     private jwtService: JwtService,
     private cryptoService: CryptoService,
-    readonly usersService: UsersService,
     private emailService: EmailService,
     private sessionService: SessionService,
   ) {}
@@ -74,6 +72,7 @@ export class AuthService {
     try {
       payload = this.jwtService.verify(oldToken);
     } catch (e) {
+      console.error('Refresh token error:', e);
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
@@ -106,19 +105,6 @@ export class AuthService {
     );
 
     return { newAccessToken, newRefreshToken };
-  }
-
-  async refreshTokens(userId: string, deviceId: string, oldIat: number) {
-    const newRefreshToken = this.generateRefreshToken(userId, deviceId);
-    const newPayload: any = this.jwtService.decode(newRefreshToken);
-
-    await this.sessionService.updateSessionLastActiveDate(
-      deviceId,
-      oldIat,
-      newPayload.iat,
-    );
-
-    return newRefreshToken;
   }
 
   async validateUser(
