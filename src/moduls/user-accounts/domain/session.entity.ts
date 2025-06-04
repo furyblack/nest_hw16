@@ -9,7 +9,7 @@ export class Session {
   @Prop({ required: true })
   title: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: Date })
   lastActiveDate: Date;
 
   @Prop({ required: true })

@@ -68,15 +68,13 @@ export class AuthService {
     );
   }
 
-  async refreshToken(oldRefreshToken: string) {
+  async refreshToken(oldToken: string) {
     let payload: any;
+
     try {
-      payload = this.jwtService.verify(oldRefreshToken);
+      payload = this.jwtService.verify(oldToken);
     } catch (e) {
-      if (e instanceof TokenExpiredError) {
-        throw new UnauthorizedException('Refresh token expired');
-      }
-      throw new UnauthorizedException('Invalid refresh token');
+      throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
     const session = await this.sessionService.findSessionByDeviceIdAndDate(
@@ -85,7 +83,7 @@ export class AuthService {
     );
 
     if (!session) {
-      throw new UnauthorizedException('Session not found or already updated');
+      throw new UnauthorizedException('Session not found or token reused');
     }
 
     const user = await this.usersRepository.findById(payload.userId);
@@ -98,7 +96,8 @@ export class AuthService {
       user.id,
       payload.deviceId,
     );
-    const newPayload: any = this.jwtService.decode(newRefreshToken);
+
+    const newPayload = this.jwtService.decode(newRefreshToken) as any;
 
     await this.sessionService.updateSessionLastActiveDate(
       payload.deviceId,

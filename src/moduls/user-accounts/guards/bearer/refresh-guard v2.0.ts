@@ -37,10 +37,7 @@ export class RefreshTokenGuardPower implements CanActivate {
       request.user = payload;
       return true;
     } catch (e) {
-      if (e.name === 'TokenExpiredError') {
-        throw new UnauthorizedException('Refresh token expired');
-      }
-      throw new UnauthorizedException('Invalid refresh token');
+      throw new UnauthorizedException('Invalid or expired refresh token');
     }
   }
 }

@@ -30,10 +30,14 @@ export class SessionService {
   }
 
   async findSessionByDeviceIdAndDate(deviceId: string, iat: number) {
+    const date = new Date(iat * 1000);
     return this.sessionModel
       .findOne({
         deviceId,
-        lastActiveDate: new Date(iat * 1000),
+        lastActiveDate: {
+          $gte: new Date(date.getTime() - 500), // -500 мс делаем для того чтоб пофиксить возможное не совпадения по мс
+          $lte: new Date(date.getTime() + 500), // +500 мс
+        },
       })
       .exec();
   }
@@ -60,8 +64,8 @@ export class SessionService {
 
     const result = await this.sessionModel
       .updateOne(
-        { deviceId, lastActiveDate: oldIat },
-        { $set: { lastActiveDate: newIat } },
+        { deviceId, lastActiveDate: new Date(oldDate) },
+        { $set: { lastActiveDate: new Date(newDate) } },
       )
       .exec();
 

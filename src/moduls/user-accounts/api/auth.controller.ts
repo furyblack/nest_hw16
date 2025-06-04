@@ -8,7 +8,6 @@ import {
   Post,
   Req,
   Res,
-  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { Response } from 'express';
@@ -37,7 +36,9 @@ export class AuthController {
     private authService: AuthService,
     private jwtService: JwtService,
     private authQueryRepository: AuthQueryRepository,
-  ) {}
+  ) {
+    console.log('AuthController initialized');
+  }
 
   @Post('registration')
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -77,32 +78,19 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async refreshToken(
     @Cookies('refreshToken') refreshToken: string,
-    @Res({ passthrough: true }) response: Response,
+    @Res({ passthrough: true }) res: Response,
   ) {
-    console.log('Received refreshToken:', refreshToken);
+    console.log('refreshToken endpoint hit');
+    const { newAccessToken, newRefreshToken } =
+      await this.authService.refreshToken(refreshToken);
 
-    if (!refreshToken) {
-      console.log('Refresh token not provided');
-      throw new UnauthorizedException('Refresh token not provided');
-    }
+    res.cookie('refreshToken', newRefreshToken, {
+      httpOnly: true,
+      secure: true,
+      maxAge: 20 * 1000,
+    });
 
-    try {
-      const { newAccessToken, newRefreshToken } =
-        await this.authService.refreshToken(refreshToken);
-      console.log('Generated new tokens:', { newAccessToken, newRefreshToken });
-
-      response.cookie('refreshToken', newRefreshToken, {
-        httpOnly: true,
-        secure: true,
-        maxAge: 20 * 1000,
-      });
-
-      return { accessToken: newAccessToken };
-    } catch (e) {
-      console.error('Error in refresh-token:', e);
-      response.clearCookie('refreshToken');
-      throw e;
-    }
+    return { accessToken: newAccessToken };
   }
 
   @Post('logout')
