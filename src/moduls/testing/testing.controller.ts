@@ -9,6 +9,10 @@ import {
   Post,
   PostModelType,
 } from '../bloggers-platform/posts/domain/post.entity';
+import {
+  Session,
+  SessionModelType,
+} from '../user-accounts/domain/session.entity';
 
 @Controller('testing')
 export class TestingController {
@@ -19,6 +23,8 @@ export class TestingController {
     private BlogModel: BlogModelType,
     @InjectModel(Post.name)
     private PostModel: PostModelType,
+    @InjectModel(Session.name)
+    private SessionModel: SessionModelType,
   ) {}
 
   @Delete('all-data')
@@ -28,6 +34,7 @@ export class TestingController {
       this.UserModel.deleteMany(),
       this.BlogModel.deleteMany(),
       this.PostModel.deleteMany(),
+      this.SessionModel.deleteMany(),
     ]);
   }
 }

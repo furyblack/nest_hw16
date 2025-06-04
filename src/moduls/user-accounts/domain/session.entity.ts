@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Model } from 'mongoose';
 
 @Schema()
 export class Session {
@@ -10,7 +10,7 @@ export class Session {
   title: string;
 
   @Prop({ required: true })
-  lastActiveDate: string;
+  lastActiveDate: Date;
 
   @Prop({ required: true })
   deviceId: string;
@@ -21,3 +21,5 @@ export class Session {
 
 export type SessionDocument = Session & Document;
 export const SessionSchema = SchemaFactory.createForClass(Session);
+
+export type SessionModelType = Model<SessionDocument> & typeof Session;

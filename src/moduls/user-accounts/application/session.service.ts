@@ -18,7 +18,7 @@ export class SessionService {
     title: string;
     deviceId: string;
     userId: string;
-    lastActiveDate: string;
+    lastActiveDate: Date;
   }) {
     await this.sessionModel.create({
       ...sessionData,
@@ -33,7 +33,7 @@ export class SessionService {
     return this.sessionModel
       .findOne({
         deviceId,
-        lastActiveDate: iat,
+        lastActiveDate: new Date(iat * 1000),
       })
       .exec();
   }
@@ -43,7 +43,7 @@ export class SessionService {
     iat: number,
   ): Promise<void> {
     const result = await this.sessionModel
-      .deleteOne({ deviceId, lastActiveDate: iat })
+      .deleteOne({ deviceId, lastActiveDate: new Date(iat * 1000) })
       .exec();
     if (result.deletedCount === 0) {
       throw new NotFoundException('Session not found');
@@ -55,6 +55,9 @@ export class SessionService {
     oldIat: number,
     newIat: number,
   ) {
+    const oldDate = new Date(oldIat * 1000);
+    const newDate = new Date(newIat * 1000);
+
     const result = await this.sessionModel
       .updateOne(
         { deviceId, lastActiveDate: oldIat },
@@ -88,7 +91,6 @@ export class SessionService {
     const session = await this.sessionModel
       .findOne({
         deviceId,
-        lastActiveDate: iat,
       })
       .exec();
 
@@ -103,7 +105,6 @@ export class SessionService {
     await this.sessionModel
       .deleteOne({
         deviceId,
-        lastActiveDate: iat,
       })
       .exec();
   }

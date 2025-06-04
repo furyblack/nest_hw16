@@ -48,7 +48,7 @@ export class AuthService {
       title: userAgent,
       deviceId,
       userId: user.id,
-      lastActiveDate: refreshDecode.iat,
+      lastActiveDate: new Date(refreshDecode.iat * 1000),
     });
 
     return { accessToken, refreshToken };

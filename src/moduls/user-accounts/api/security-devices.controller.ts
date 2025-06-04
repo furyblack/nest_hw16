@@ -1,4 +1,12 @@
-import { Controller, Get, Delete, Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Delete,
+  Param,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { SessionService } from '../application/session.service';
 import { ExtractUserFromRequest } from '../guards/decorators/param/extract-user-from-request.decorator';
@@ -22,12 +30,13 @@ export class SecurityDevicesController {
     return sessions.map((session) => ({
       ip: session.ip,
       title: session.title,
-      lastActiveDate: session.lastActiveDate,
+      lastActiveDate: new Date(session.lastActiveDate).toISOString(),
       deviceId: session.deviceId,
     }));
   }
 
   @Delete('devices')
+  @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(RefreshTokenGuardPower)
   async terminateOtherSessions(
     @ExtractUserFromRequest() user: UserContextDto,
@@ -42,6 +51,7 @@ export class SecurityDevicesController {
   }
 
   @Delete('devices/:deviceId')
+  @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(RefreshTokenGuardPower)
   async terminateDevice(
     @ExtractUserFromRequest() user: UserContextDto,
