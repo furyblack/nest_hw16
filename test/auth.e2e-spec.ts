@@ -65,7 +65,7 @@ describe('Auth Controller (e2e)', () => {
 
       // Act
       const meResponse = await authTestManager.getMe(accessToken);
-
+      console.log('meResponse.body', meResponse.body);
       // Assert
       expect(meResponse.status).toBe(HttpStatus.OK);
       expect(meResponse.body).toEqual({
