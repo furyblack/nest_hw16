@@ -8,7 +8,7 @@ export class AuthQueryRepository {
 
   async me(userId: string): Promise<MeViewDto> {
     const user = await this.usersRepository.findOrNotFoundFail(userId);
-
+    console.log('returned from /me', MeViewDto.mapToView(user));
     return MeViewDto.mapToView(user);
   }
 }
