@@ -14,16 +14,16 @@ export class UsersService {
     private registerUserUseCase: RegisterUserUseCase,
     private deleteUserUseCase: DeleteUserUseCase,
   ) {}
-  async isLoginTaken(login: string): Promise<boolean> {
-    return this.usersRepository.loginIsExist(login);
-  }
-  async createUser(dto: CreateUserDto): Promise<Types.ObjectId> {
-    return this.createUserUseCase.execute(dto);
-  }
-
-  async deleteUser(id: string): Promise<void> {
-    return this.deleteUserUseCase.execute(id);
-  }
+  // async isLoginTaken(login: string): Promise<boolean> {
+  //   return this.usersRepository.loginIsExist(login);
+  // }
+  // async createUser(dto: CreateUserDto): Promise<Types.ObjectId> {
+  //   return this.createUserUseCase.execute(dto);
+  // }
+  //
+  // async deleteUser(id: string): Promise<void> {
+  //   return this.deleteUserUseCase.execute(id);
+  // }
   async registerUser(dto: CreateUserDto): Promise<void> {
     return this.registerUserUseCase.execute(dto);
   }
